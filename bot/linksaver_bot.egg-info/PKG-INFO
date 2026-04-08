@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: linksaver-bot
+Version: 1.0.0
+Summary: LinkSaver Telegram Bot with LLM integration
+Requires-Python: >=3.12
+Requires-Dist: aiogram>=3.14.0
+Requires-Dist: httpx>=0.28.0
+Requires-Dist: pydantic>=2.10.0

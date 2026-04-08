@@ -1,0 +1,16 @@
+2026-04-08 13:32:41,383 [INFO] __main__: Loaded .env from C:\Users\Ivan_\Desktop\se-toolkit-hackathon\.env
+2026-04-08 13:32:41,383 [INFO] __main__: API_BASE_URL=http://localhost:8000
+2026-04-08 13:32:41,633 [INFO] __main__: Bot started. Listening for messages...
+2026-04-08 13:32:41,633 [INFO] aiogram.dispatcher: Start polling
+2026-04-08 13:32:41,849 [INFO] aiogram.dispatcher: Run polling for bot @se_toolkit_bot id=8665218343 - 'se-toolkit-bot'
+2026-04-08 13:33:00,918 [INFO] aiogram.event: Update id=259417270 is handled. Duration 236 ms by bot id=8665218343
+2026-04-08 13:33:03,337 [INFO] httpx: HTTP Request: GET http://localhost:8000/api/links?user_id=1288866149&limit=20 "HTTP/1.1 200 OK"
+2026-04-08 13:33:03,435 [INFO] aiogram.event: Update id=259417271 is handled. Duration 686 ms by bot id=8665218343
+2026-04-08 13:33:11,290 [INFO] aiogram.event: Update id=259417272 is handled. Duration 90 ms by bot id=8665218343
+2026-04-08 13:33:24,570 [INFO] httpx: HTTP Request: GET http://localhost:8000/api/links?user_id=1288866149&limit=20 "HTTP/1.1 200 OK"
+2026-04-08 13:33:24,667 [INFO] aiogram.event: Update id=259417273 is handled. Duration 614 ms by bot id=8665218343
+2026-04-08 13:33:27,595 [INFO] httpx: HTTP Request: DELETE http://localhost:8000/api/links/d1bf5003-b4fe-4a27-94e5-b382a0d4db5b?user_id=1288866149 "HTTP/1.1 204 No Content"
+2026-04-08 13:33:28,185 [INFO] httpx: HTTP Request: GET http://localhost:8000/api/links?user_id=1288866149&limit=20 "HTTP/1.1 200 OK"
+2026-04-08 13:33:28,281 [INFO] aiogram.event: Update id=259417274 is handled. Duration 1203 ms by bot id=8665218343
+2026-04-08 13:33:31,655 [INFO] httpx: HTTP Request: GET http://localhost:8000/api/links?user_id=1288866149&limit=20 "HTTP/1.1 200 OK"
+2026-04-08 13:33:31,760 [INFO] aiogram.event: Update id=259417275 is handled. Duration 619 ms by bot id=8665218343

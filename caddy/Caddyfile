@@ -1,0 +1,7 @@
+# Caddy reverse proxy configuration
+:80 {
+    # Serve frontend and proxy API to backend
+    reverse_proxy /api/* backend:8000
+    reverse_proxy /health backend:8000
+    reverse_proxy /* backend:8000
+}

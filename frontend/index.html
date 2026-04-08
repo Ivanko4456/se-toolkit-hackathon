@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkSaver — Мои закладки</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>🔗 LinkSaver</h1>
+        <p class="subtitle">Save links via Telegram — find them on the web dashboard</p>
+    </header>
+
+    <main>
+        <section class="search-bar">
+            <input type="text" id="tagInput" placeholder="Filter by tag..." />
+            <button id="searchBtn" onclick="fetchLinks()">🔍 Search</button>
+        </section>
+
+        <section id="linksContainer" class="links-grid">
+            <!-- Links will be rendered here -->
+        </section>
+
+        <p id="emptyMsg" class="empty-msg" style="display:none;">No links yet. Send a link via the Telegram bot!</p>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function fetchLinks() {
+            const tag = document.getElementById('tagInput').value.trim();
+            const url = new URL('/api/links', API_BASE);
+            if (tag) url.searchParams.set('tag', tag);
+            url.searchParams.set('limit', '100');
+
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error('Network error');
+                const data = await resp.json();
+                renderLinks(data.links);
+            } catch (err) {
+                console.error('Failed to fetch links:', err);
+                document.getElementById('linksContainer').innerHTML =
+                    '<p class="error">❌ Error loading links</p>';
+            }
+        }
+
+        function renderLinks(links) {
+            const container = document.getElementById('linksContainer');
+            const emptyMsg = document.getElementById('emptyMsg');
+
+            if (!links || links.length === 0) {
+                container.innerHTML = '';
+                emptyMsg.style.display = 'block';
+                return;
+            }
+
+            emptyMsg.style.display = 'none';
+            container.innerHTML = links.map(link => `
+                <div class="link-card">
+                    <h3>
+                        <a href="${escapeHtml(link.url)}" target="_blank" rel="noopener">
+                            ${escapeHtml(link.title || link.url)}
+                        </a>
+                    </h3>
+                    <p class="link-url">${escapeHtml(link.url)}</p>
+                    <div class="link-tags">
+                        ${(link.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                    <p class="link-date">${new Date(link.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                    })}</p>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Initial load
+        fetchLinks();
+
+        // Allow Enter key to trigger search
+        document.getElementById('tagInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') fetchLinks();
+        });
+    </script>
+</body>
+</html>

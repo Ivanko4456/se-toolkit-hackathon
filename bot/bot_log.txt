@@ -1,0 +1,8 @@
+2026-04-08 12:54:59,091 [INFO] __main__: Bot started. Listening for messages...
+2026-04-08 12:54:59,091 [INFO] aiogram.dispatcher: Start polling
+2026-04-08 12:54:59,308 [INFO] aiogram.dispatcher: Run polling for bot @se_toolkit_bot id=8665218343 - 'se-toolkit-bot'
+2026-04-08 12:55:03,452 [ERROR] aiogram.dispatcher: Failed to fetch updates - TelegramConflictError: Telegram server says - Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-04-08 12:55:03,453 [WARNING] aiogram.dispatcher: Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8665218343)
+2026-04-08 12:55:08,968 [ERROR] aiogram.dispatcher: Failed to fetch updates - TelegramConflictError: Telegram server says - Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-04-08 12:55:08,969 [WARNING] aiogram.dispatcher: Sleep for 1.342016 seconds and try again... (tryings = 1, bot id = 8665218343)
+^C
