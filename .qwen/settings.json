@@ -20,7 +20,8 @@
       "Bash(echo.--- *)",
       "Bash(start *)",
       "Bash(rmdir *)",
-      "Bash(select-object *)"
+      "Bash(select-object *)",
+      "Bash(docker compose exec *)"
     ]
   },
   "$version": 3

@@ -1,6 +1,7 @@
 """LLM client for extracting structured data from user messages.
 
-Uses Ollama-compatible endpoint. Falls back to regex-based extraction if LLM fails.
+Uses OpenAI-compatible API (Qwen Code / OpenRouter / etc).
+Falls back to regex-based extraction if LLM fails.
 """
 
 import json
@@ -13,17 +14,20 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-LLM_API_URL = os.getenv("LLM_API_URL", "http://llm:11434/api/generate")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama3.2")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+LLM_API_BASE_URL = os.getenv("LLM_API_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen-plus")
 
-SYSTEM_PROMPT = """Extract structured data from this user message:
-- URL: [detect the URL from the message]
-- Title: [suggest a title based on context, or leave empty]
-- Tags: [extract keywords as a list]
+SYSTEM_PROMPT = """You are a helpful assistant that extracts structured data from user messages.
 
-User message: "{user_input}"
+When the user sends a message containing a URL, respond with ONLY valid JSON in this exact format:
+{"url": "the URL", "title": "a suggested title or null", "tags": ["tag1", "tag2"]}
 
-Respond ONLY in valid JSON format: {{"url": "...", "title": "...", "tags": ["tag1", "tag2"]}}"""
+Rules:
+- Extract the full URL from the message.
+- Suggest a title based on context, or use null.
+- Extract relevant keywords as tags.
+- Return ONLY the JSON object, no additional text."""
 
 
 async def extract_link_data(user_input: str) -> Optional[dict]:
@@ -31,19 +35,32 @@ async def extract_link_data(user_input: str) -> Optional[dict]:
 
     Returns dict with keys: url, title, tags — or None on failure.
     """
+    if not LLM_API_KEY:
+        logger.warning("LLM_API_KEY not set. Falling back to regex.")
+        return _fallback_extract(user_input)
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                LLM_API_URL,
+                f"{LLM_API_BASE_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost",
+                    "X-Title": "LinkSaver Bot",
+                },
                 json={
                     "model": LLM_MODEL,
-                    "prompt": SYSTEM_PROMPT.format(user_input=user_input),
-                    "stream": False,
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_input},
+                    ],
+                    "temperature": 0.1,
                 },
             )
             response.raise_for_status()
             data = response.json()
-            llm_output = data.get("response", "")
+            llm_output = data["choices"][0]["message"]["content"]
             return _parse_llm_response(llm_output)
     except Exception as e:
         logger.warning("LLM request failed: %s. Falling back to regex.", e)

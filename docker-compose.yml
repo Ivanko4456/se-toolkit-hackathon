@@ -34,21 +34,12 @@ services:
     build: ./bot
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      LLM_API_URL: ${LLM_API_URL:-http://llm:11434/api/generate}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_API_BASE_URL: https://openrouter.ai/api/v1
+      LLM_MODEL: google/gemma-3-4b-it:free
       API_BASE_URL: http://backend:8000
     depends_on:
       - backend
-
-  llm:
-    # Placeholder for Ollama. Skip or comment-out if not using LLM.
-    # Bot has built-in regex fallback.
-    image: ollama/ollama:latest
-    profiles:
-      - llm
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
 
   caddy:
     image: caddy:2-alpine
@@ -62,4 +53,3 @@ services:
 
 volumes:
   pgdata:
-  ollama_data:
