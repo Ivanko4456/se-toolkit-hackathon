@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .api.links import router as links_router
+from .api.stats import router as stats_router
 from .database import init_db
 
 
@@ -36,6 +37,7 @@ app.add_middleware(
 
 # Register API routes
 app.include_router(links_router)
+app.include_router(stats_router)
 
 
 # Serve frontend static files
@@ -48,6 +50,12 @@ if FRONTEND_DIR.exists():
         """Serve the main index.html."""
         from fastapi.responses import FileResponse
         return FileResponse(FRONTEND_DIR / "index.html")
+
+    @app.get("/stats.html")
+    async def serve_stats_page():
+        """Serve the stats page."""
+        from fastapi.responses import FileResponse
+        return FileResponse(FRONTEND_DIR / "stats.html")
 
 
 @app.get("/health")

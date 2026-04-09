@@ -34,3 +34,25 @@ class LinkResponse(BaseModel):
 class LinkListResponse(BaseModel):
     links: list[LinkResponse]
     total: int
+
+
+class TagStat(BaseModel):
+    """Tag frequency statistic."""
+    tag: str
+    count: int
+
+
+class StatsResponse(BaseModel):
+    """Aggregated statistics for the dashboard."""
+    total_links: int
+    total_users: int
+    links_last_7_days: int
+    links_last_30_days: int
+    top_tags: list[TagStat]
+    oldest_links_count: int  # links older than 30 days
+
+
+class StatsTimelineResponse(BaseModel):
+    """Daily link creation timeline for charting."""
+    dates: list[str]  # ISO date strings
+    counts: list[int]

@@ -122,3 +122,76 @@ async def test_health_check(client: AsyncClient):
     resp = await client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
+
+
+@pytest.mark.asyncio
+async def test_get_stats(client: AsyncClient):
+    """GET /api/stats should return aggregated statistics."""
+    # Create some links
+    await client.post("/api/links", json={
+        "url": "https://example.com/1",
+        "title": "Link 1",
+        "tags": ["python", "tutorial"],
+        "user_id": "user1",
+    })
+    await client.post("/api/links", json={
+        "url": "https://example.com/2",
+        "title": "Link 2",
+        "tags": ["python", "docs"],
+        "user_id": "user2",
+    })
+    await client.post("/api/links", json={
+        "url": "https://example.com/3",
+        "title": "Link 3",
+        "tags": ["go"],
+        "user_id": "user1",
+    })
+
+    resp = await client.get("/api/stats")
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["total_links"] == 3
+    assert data["total_users"] == 2
+    assert data["links_last_7_days"] == 3
+    assert data["links_last_30_days"] == 3
+    
+    # Top tags: python=2, tutorial=1, docs=1, go=1
+    assert len(data["top_tags"]) == 4
+    top_tag_names = [t["tag"] for t in data["top_tags"]]
+    assert "python" in top_tag_names
+    assert data["top_tags"][0]["tag"] == "python"
+    assert data["top_tags"][0]["count"] == 2
+
+
+@pytest.mark.asyncio
+async def test_get_stats_empty(client: AsyncClient):
+    """GET /api/stats should return zeros when no links exist."""
+    resp = await client.get("/api/stats")
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert data["total_links"] == 0
+    assert data["total_users"] == 0
+    assert data["top_tags"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_timeline(client: AsyncClient):
+    """GET /api/stats/timeline should return daily counts."""
+    # Create a link
+    await client.post("/api/links", json={
+        "url": "https://example.com/timeline",
+        "title": "Timeline Test",
+        "tags": ["test"],
+        "user_id": "user1",
+    })
+
+    resp = await client.get("/api/stats/timeline", params={"days": 7})
+    assert resp.status_code == 200
+    data = resp.json()
+    
+    assert len(data["dates"]) == 7
+    assert len(data["counts"]) == 7
+    # Today should have at least 1
+    assert data["counts"][-1] >= 1

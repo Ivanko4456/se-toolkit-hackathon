@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkSaver — Statistics</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .stats-page {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card-large {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .stat-card-large .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+        }
+        .stat-card-large .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+        .chart-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        .chart-section h2 {
+            margin: 0 0 1rem 0;
+            font-size: 1.3rem;
+            color: #1a1a2e;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .tag-cloud-item {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            background: #667eea;
+            color: #fff;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+        .tag-cloud-item:hover {
+            transform: scale(1.05);
+        }
+        .tag-cloud-item.size-1 { font-size: 0.8rem; opacity: 0.6; }
+        .tag-cloud-item.size-2 { font-size: 0.9rem; opacity: 0.7; }
+        .tag-cloud-item.size-3 { font-size: 1.0rem; opacity: 0.8; }
+        .tag-cloud-item.size-4 { font-size: 1.1rem; opacity: 0.9; }
+        .tag-cloud-item.size-5 { font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📊 LinkSaver — Statistics</h1>
+        <p class="subtitle">Analytics and overview of your bookmarks</p>
+        <nav class="nav-links">
+            <a href="/">🏠 Home</a>
+            <a href="/stats.html">📊 Stats</a>
+        </nav>
+    </header>
+
+    <main class="stats-page">
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card-large">
+                <span class="stat-value" id="totalLinks">—</span>
+                <span class="stat-label">Total Links</span>
+            </div>
+            <div class="stat-card-large">
+                <span class="stat-value" id="totalUsers">—</span>
+                <span class="stat-label">Users</span>
+            </div>
+            <div class="stat-card-large">
+                <span class="stat-value" id="last7Days">—</span>
+                <span class="stat-label">Last 7 Days</span>
+            </div>
+            <div class="stat-card-large">
+                <span class="stat-value" id="last30Days">—</span>
+                <span class="stat-label">Last 30 Days</span>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>📈 Link Saving Timeline</h2>
+            <div class="chart-container">
+                <canvas id="timelineChart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>🏷️ Top 10 Tags</h2>
+            <div class="chart-container">
+                <canvas id="tagsChart"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>☁️ Tag Cloud</h2>
+            <div class="tag-cloud" id="tagCloud">
+                <!-- Tags will be rendered here -->
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>📜 Forgotten Links</h2>
+            <p class="forgotten-info">Links older than 30 days: <strong id="oldestCount">—</strong></p>
+            <p class="forgotten-hint">💡 Check if you've missed anything important in your old bookmarks.</p>
+        </section>
+    </main>
+
+    <script>
+        async function loadStats() {
+            try {
+                const [statsResp, timelineResp] = await Promise.all([
+                    fetch('/api/stats'),
+                    fetch('/api/stats/timeline?days=30')
+                ]);
+
+                if (!statsResp.ok || !timelineResp.ok) throw new Error('Network error');
+
+                const stats = await statsResp.json();
+                const timeline = await timelineResp.json();
+
+                // Fill stat cards
+                document.getElementById('totalLinks').textContent = stats.total_links;
+                document.getElementById('totalUsers').textContent = stats.total_users;
+                document.getElementById('last7Days').textContent = stats.links_last_7_days;
+                document.getElementById('last30Days').textContent = stats.links_last_30_days;
+                document.getElementById('oldestCount').textContent = stats.oldest_links_count;
+
+                // Timeline chart
+                renderTimelineChart(timeline);
+
+                // Tags chart
+                renderTagsChart(stats.top_tags);
+
+                // Tag cloud
+                renderTagCloud(stats.top_tags);
+
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+                document.querySelector('.stats-grid').innerHTML =
+                    '<p class="error">❌ Error loading statistics</p>';
+            }
+        }
+
+        function renderTimelineChart(timeline) {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeline.dates.map(d => {
+                        const date = new Date(d);
+                        return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    }),
+                    datasets: [{
+                        label: 'Links per day',
+                        data: timeline.counts,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTagsChart(topTags) {
+            const ctx = document.getElementById('tagsChart').getContext('2d');
+            const labels = topTags.map(t => t.tag);
+            const data = topTags.map(t => t.count);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Usage count',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(199, 199, 199, 0.8)',
+                            'rgba(83, 102, 255, 0.8)',
+                        ],
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTagCloud(topTags) {
+            const container = document.getElementById('tagCloud');
+            if (!topTags || topTags.length === 0) {
+                container.innerHTML = '<p>No tags</p>';
+                return;
+            }
+
+            const maxCount = Math.max(...topTags.map(t => t.count));
+            const html = topTags.map(t => {
+                const ratio = t.count / maxCount;
+                let size = 1;
+                if (ratio > 0.8) size = 5;
+                else if (ratio > 0.6) size = 4;
+                else if (ratio > 0.4) size = 3;
+                else if (ratio > 0.2) size = 2;
+
+                return `<span class="tag-cloud-item size-${size}">#${escapeHtml(t.tag)} (${t.count})</span>`;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Initial load
+        loadStats();
+    </script>
+</body>
+</html>
