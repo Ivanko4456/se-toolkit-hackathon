@@ -33,12 +33,19 @@ def _tag_filter_expr(tag: str, dialect_name: str):
     """Build a tag filter that works on both PostgreSQL ARRAY and SQLite JSON."""
     if dialect_name == "postgresql":
         return Link.tags.contains([tag])
-    # SQLite: tags stored as JSON array — use json_each to match exact tag
-    from sqlalchemy import text
-    # json_each expands JSON array into rows, we check if our tag exists
-    return text(
-        "EXISTS (SELECT 1 FROM json_each(links.tags) AS tag_val WHERE tag_val.value = :tag_name)"
-    ).bindparams(tag_name=tag)
+    # SQLite: tags stored as JSON array like '["tag1", "tag2"]' (json.dumps adds space after comma)
+    # Match tag as exact JSON array element in all possible positions
+    from sqlalchemy import cast
+    return (
+        # Single element array: ["tag"]
+        (cast(Link.tags, Text) == f'["{tag}"]') |
+        # First element: ["tag", ...]
+        (cast(Link.tags, Text).like(f'["{tag}", %')) |
+        # Last element: [..., "tag"]
+        (cast(Link.tags, Text).like(f'[%, "{tag}"]')) |
+        # Middle element: [..., "tag", ...]
+        (cast(Link.tags, Text).like(f'%, "{tag}", %'))
+    )
 
 
 @router.get("", response_model=LinkListResponse)
