@@ -30,10 +30,8 @@ async def create_link(data: LinkCreate, db: AsyncSession = Depends(get_db)):
 
 
 def _tag_filter_expr(tag: str, dialect_name: str):
-    """Build a tag filter that works on both PostgreSQL ARRAY and SQLite JSON."""
-    if dialect_name == "postgresql":
-        return Link.tags.contains([tag])
-    # SQLite: tags stored as JSON array like '["tag1", "tag2"]' (json.dumps adds space after comma)
+    """Build a tag filter that works when tags are stored as JSON TEXT in any DB."""
+    # tags stored as JSON text: '["tag1", "tag2"]'
     # Match tag as exact JSON array element in all possible positions
     from sqlalchemy import cast
     return (
