@@ -2,45 +2,41 @@
 
 import logging
 import os
+import re
 
 from aiogram import types
 
 import httpx
 
-from llm_client import extract_link_data
-
 logger = logging.getLogger(__name__)
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
+# Regex to extract URL from message
+URL_RE = re.compile(r'https?://[^\s<>"]+')
+# Regex to extract hashtags
+TAG_RE = re.compile(r'#(\w+)')
+
 
 async def handle_save_link(message: types.Message):
-    """Process a message containing a URL: extract data via LLM and save."""
+    """Process a message containing a URL: extract via regex and save."""
     user_input = message.text or ""
     user_id = str(message.from_user.id)
 
-    # Check if message contains http
-    if "http" not in user_input.lower():
+    # Extract URL
+    url_match = URL_RE.search(user_input)
+    if not url_match:
         await message.answer(
             "❌ Could not find a URL in the message. Please send a message with a link.",
         )
         return
+
+    url = url_match.group(0)
+    # Extract hashtags as tags
+    tags = TAG_RE.findall(user_input)
 
     # Send typing action
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
-
-    # Extract structured data via LLM (with fallback)
-    extracted = await extract_link_data(user_input)
-
-    if not extracted:
-        await message.answer(
-            "❌ Could not find a URL in the message. Please send a message with a link.",
-        )
-        return
-
-    url = extracted["url"]
-    title = extracted.get("title")
-    tags = extracted.get("tags", [])
 
     # Save via backend API
     try:
@@ -49,7 +45,7 @@ async def handle_save_link(message: types.Message):
                 f"{API_BASE_URL}/api/links",
                 json={
                     "url": url,
-                    "title": title,
+                    "title": None,
                     "tags": tags,
                     "user_id": user_id,
                 },
@@ -66,10 +62,9 @@ async def handle_save_link(message: types.Message):
 
     # Confirmation
     tags_str = " ".join(f"#{t}" for t in tags) if tags else ""
-    title_display = title or url
     await message.answer(
         f"✅ Link saved!\n\n"
-        f"📎 <a href=\"{url}\">{title_display}</a>\n"
+        f"📎 <a href=\"{url}\">{url}</a>\n"
         f"🏷 {tags_str}".strip(),
         parse_mode="HTML",
         disable_web_page_preview=True,

@@ -1,7 +1,7 @@
 [project]
 name = "linksaver-bot"
 version = "1.0.0"
-description = "LinkSaver Telegram Bot with LLM integration"
+description = "LinkSaver Telegram Bot"
 requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.14.0",

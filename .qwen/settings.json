@@ -21,7 +21,8 @@
       "Bash(start *)",
       "Bash(rmdir *)",
       "Bash(select-object *)",
-      "Bash(docker compose exec *)"
+      "Bash(docker compose exec *)",
+      "Bash(del *)"
     ]
   },
   "$version": 3

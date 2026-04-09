@@ -1,6 +1,6 @@
-# 🔗 LinkSaver — LLM-Powered Telegram Bookmark Manager
+# 🔗 LinkSaver — Telegram Bookmark Manager
 
-Save links with tags via Telegram — and find and view them on the web dashboard.
+Save links with tags via Telegram — and find and view them on the web dashboard with analytics.
 
 ## Architecture
 
@@ -9,12 +9,12 @@ Save links with tags via Telegram — and find and view them on the web dashboar
 │  Telegram   │────▶│   Bot    │────▶│ Backend  │────▶│PostgreSQL│
 │   Client    │     │(aiogram) │     │(FastAPI) │     │          │
 └─────────────┘     └──────────┘     └──────────┘     └──────────┘
-                          │                │
-                          ▼                ▼
-                    ┌──────────┐     ┌──────────┐
-                    │   LLM    │     │ Frontend │
-                    │ (Ollama) │     │  (HTML)  │
-                    └──────────┘     └──────────┘
+                                       │
+                                       ▼
+                                 ┌──────────┐
+                                 │ Frontend │
+                                 │  (HTML)  │
+                                 └──────────┘
 ```
 
 ## Quick Start
@@ -30,16 +30,13 @@ cp .env.example .env
 ### 2. Run with Docker Compose
 
 ```bash
-# Start without LLM (uses regex fallback)
 docker compose up -d
-
-# Or with LLM (Ollama)
-docker compose --profile llm up -d
 ```
 
 Services:
 - **Backend API**: http://localhost:8000
-- **Web Dashboard**: http://localhost:8000/ (or via Caddy at http://localhost)
+- **Web Dashboard**: http://localhost:8000/
+- **Stats Dashboard**: http://localhost:8000/stats.html
 - **Health Check**: http://localhost:8000/health
 
 ### 3. Use the bot
@@ -77,19 +74,21 @@ se-toolkit-hackathon/
 │       ├── database.py       # Async SQLAlchemy engine & session
 │       ├── models.py         # SQLAlchemy Link model
 │       ├── schemas.py        # Pydantic v2 request/response schemas
-│       └── api/links.py      # CRUD endpoints
+│       └── api/
+│           ├── links.py      # CRUD endpoints
+│           └── stats.py      # Statistics & analytics endpoints
 │
 ├── bot/
 │   ├── Dockerfile
 │   ├── pyproject.toml
 │   ├── main.py               # aiogram bot entry point
-│   ├── llm_client.py         # LLM integration + regex fallback
 │   └── handlers/
 │       ├── commands.py       # /start, /help, /mylinks
 │       └── save_link.py      # Link save flow
 │
 ├── frontend/
 │   ├── index.html            # Single-page web dashboard
+│   ├── stats.html            # Statistics dashboard with Chart.js
 │   └── static/css/style.css  # Responsive styles
 │
 ├── caddy/
@@ -113,6 +112,8 @@ se-toolkit-hackathon/
 | `GET` | `/api/links` | List links (`?tag=python&user_id=123`) |
 | `GET` | `/api/links/{id}` | Get single link |
 | `DELETE` | `/api/links/{id}` | Delete a link (`?user_id=...`) |
+| `GET` | `/api/stats` | Get aggregated statistics |
+| `GET` | `/api/stats/timeline` | Get daily link creation timeline |
 | `GET` | `/health` | Health check |
 
 ## Bot Commands
@@ -122,17 +123,7 @@ se-toolkit-hackathon/
 | `/start` | Welcome message + tutorial |
 | `/help` | Usage examples |
 | `/mylinks [tag]` | View your links (optionally filtered by tag) |
-| *any message with http* | Auto-save link with LLM extraction |
-
-## LLM Integration
-
-The bot sends user messages to an Ollama-compatible LLM endpoint with this prompt:
-
-```
-Extract structured data: URL, Title, Tags (as JSON).
-```
-
-**Fallback**: If LLM fails or returns invalid JSON, the bot uses regex to extract URL and `#hashtags` from the message. No LLM is required for basic functionality.
+| *any message with http* | Auto-save link with regex extraction |
 
 ## Running Tests
 
@@ -161,8 +152,6 @@ alembic upgrade head
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://linksaver:linksaver@postgres:5432/linksaver` |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token | *(required)* |
-| `LLM_API_URL` | Ollama API endpoint | `http://llm:11434/api/generate` |
-| `LLM_MODEL` | LLM model name | `llama3.2` |
 | `API_BASE_URL` | Backend URL (for bot) | `http://backend:8000` |
 
 ## License
