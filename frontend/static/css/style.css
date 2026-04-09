@@ -133,6 +133,14 @@ main {
     background: #5a6fd6;
 }
 
+.search-bar button#clearBtn {
+    background: #e74c3c;
+}
+
+.search-bar button#clearBtn:hover {
+    background: #c0392b;
+}
+
 .links-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -182,6 +190,13 @@ main {
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
     font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.tag:hover {
+    background: #667eea;
+    color: #fff;
 }
 
 .link-date {

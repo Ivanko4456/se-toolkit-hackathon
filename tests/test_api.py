@@ -67,6 +67,44 @@ async def test_list_links_filter_by_tag(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_list_links_filter_by_tag_exact(client: AsyncClient):
+    """GET /api/links?tag=py should NOT match 'python' - exact match only."""
+    # Create links with similar tag names
+    await client.post("/api/links", json={
+        "url": "https://python.org",
+        "title": "Python",
+        "tags": ["python"],
+        "user_id": "user5",
+    })
+    await client.post("/api/links", json={
+        "url": "https://example.com/py",
+        "title": "Py Site",
+        "tags": ["py"],
+        "user_id": "user5",
+    })
+    await client.post("/api/links", json={
+        "url": "https://pypy.org",
+        "title": "PyPy",
+        "tags": ["pypy"],
+        "user_id": "user5",
+    })
+
+    # Search for exact "py" tag - should only find one link
+    resp = await client.get("/api/links", params={"user_id": "user5", "tag": "py"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["links"][0]["title"] == "Py Site"
+
+    # Search for "python" tag - should only find one link
+    resp = await client.get("/api/links", params={"user_id": "user5", "tag": "python"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 1
+    assert data["links"][0]["title"] == "Python"
+
+
+@pytest.mark.asyncio
 async def test_get_single_link(client: AsyncClient):
     """GET /api/links/{id} should return a single link."""
     create_resp = await client.post("/api/links", json={

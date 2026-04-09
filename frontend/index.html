@@ -20,6 +20,7 @@
         <section class="search-bar">
             <input type="text" id="tagInput" placeholder="Filter by tag..." />
             <button id="searchBtn" onclick="fetchLinks()">🔍 Search</button>
+            <button id="clearBtn" onclick="clearSearch()" style="display:none;">✕ Clear</button>
         </section>
 
         <section id="linksContainer" class="links-grid">
@@ -38,6 +39,9 @@
             if (tag) url.searchParams.set('tag', tag);
             url.searchParams.set('limit', '100');
 
+            // Show/hide clear button
+            document.getElementById('clearBtn').style.display = tag ? 'inline-block' : 'none';
+
             try {
                 const resp = await fetch(url);
                 if (!resp.ok) throw new Error('Network error');
@@ -48,6 +52,17 @@
                 document.getElementById('linksContainer').innerHTML =
                     '<p class="error">❌ Error loading links</p>';
             }
+        }
+
+        function clearSearch() {
+            document.getElementById('tagInput').value = '';
+            document.getElementById('clearBtn').style.display = 'none';
+            fetchLinks();
+        }
+
+        function searchByTag(tag) {
+            document.getElementById('tagInput').value = tag;
+            fetchLinks();
         }
 
         function renderLinks(links) {
@@ -70,7 +85,7 @@
                     </h3>
                     <p class="link-url">${escapeHtml(link.url)}</p>
                     <div class="link-tags">
-                        ${(link.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}
+                        ${(link.tags || []).map(t => `<span class="tag" onclick="searchByTag('${escapeHtml(t)}')">#${escapeHtml(t)}</span>`).join('')}
                     </div>
                     <p class="link-date">${new Date(link.created_at).toLocaleDateString('en-US', {
                         year: 'numeric', month: 'long', day: 'numeric'
